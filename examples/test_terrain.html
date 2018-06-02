@@ -8,7 +8,6 @@
 <link rel="shortcut icon" href="./assets/img/favicon.ico">
 <link rel="stylesheet" href="css/demo.css">
 
-<script src="js/demo.js"></script>
 <script src="js/libs/three.min.js"></script>
 <script src="js/controls/OrbitControls.js"></script>
 <script src="../build/oimo.js"></script>
@@ -27,8 +26,6 @@
 <img style="position: absolute; top: 0; right: 0; border: 0;" src="assets/img/ribbon.png"></a>
 <a id="ribbon" href="https://github.com/lo-th/Oimo.js"></a>      
 <script>
-    demolink();
-
     var isMobile = false;
     var antialias = true; 
 
@@ -189,8 +186,8 @@
 
     }
     function initTerrain(w, h) {
-        w = 32 || w;
-        h = 32 || h;
+        w = 50 || w;
+        h = 275 || h;
         //var g = new THREE.PlaneGeometry( 600, 600, w-1, h-1);
         var g = new THREE.PlaneBufferGeometry( 600, 600,  w-1, h-1 );
         g.applyMatrix(new THREE.Matrix4().makeRotationX( - Math.PI * 0.5 ));
