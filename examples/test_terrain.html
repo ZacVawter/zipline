@@ -11,7 +11,6 @@
 <script src="js/libs/three.min.js"></script>
 <script src="js/controls/OrbitControls.js"></script>
 <script src="../build/oimo.js"></script>
-<script src="js/ImprovedNoise.js"></script>
 
 </head>
 <body>
@@ -23,8 +22,6 @@
     <input type="number" name="gravity" min="-20" max="20" value="-10" id='gravity' onChange=gravity() >
 </div>
 <div id='info'></div>
-<img style="position: absolute; top: 0; right: 0; border: 0;" src="assets/img/ribbon.png"></a>
-<a id="ribbon" href="https://github.com/lo-th/Oimo.js"></a>      
 <script>
     var isMobile = false;
     var antialias = true; 
@@ -45,6 +42,13 @@
     var bodys = null;
     var infos;
     var type=1;
+
+    var front_hill_height = 30;
+    var front_hill_lateral = 70;
+    var back_hill_top_lateral = front_hill_lateral + 85;
+    var back_lateral = back_hill_top_lateral + 50;
+    var prop_width = 50;
+
 
     init();
     loop();
@@ -179,21 +183,23 @@
 
     function initOimoPhysics(){
 
-        world = new OIMO.World({info:true, worldscale:100});
+        world = new OIMO.World({timestep: 0.001, iterations: 100, info:true, worldscale:100});
         
         populate(1);
         //setInterval(updateOimoPhysics, 1000/60);
 
     }
     function initTerrain(w, h) {
-        w = 50 || w;
-        h = 275 || h;
+        w = 2 || w;
+        h = 4 || h;
         //var g = new THREE.PlaneGeometry( 600, 600, w-1, h-1);
-        var g = new THREE.PlaneBufferGeometry( 600, 600,  w-1, h-1 );
+        var g = new THREE.PlaneBufferGeometry( 50, 270,  1, 3 );
         g.applyMatrix(new THREE.Matrix4().makeRotationX( - Math.PI * 0.5 ));
        
         var size = w * h;
         var data = new Float32Array( size );
+
+        /*
         var perlin = new ImprovedNoise(), quality = 1, z = Math.random() * 10;
         for ( var j = 0; j < 4; j ++ ) {
             for ( var i = 0; i < size; i ++ ) {
@@ -202,6 +208,12 @@
             }
             quality *= 5;
         }
+        */
+
+        data[0]
+        data[1]
+        data[2]
+
 
         var b, v, m;
         var r = 20;
@@ -211,12 +223,50 @@
         var positions = [];
         var n = 0;
         var x, y, z;
+        
         var vertices = g.attributes.position.array;
 
+        // next to road
+        vertices[0] = prop_width;
+        vertices[1] = front_hill_height;
+        vertices[2] = 0;
+
+        vertices[3] = 0;
+        vertices[4] = front_hill_height;
+        vertices[5] = 0;
+
+
+        // bottom of hill
+        vertices[6] = prop_width;
+        vertices[7] = 0;
+        vertices[8] = front_hill_lateral;
+
+        vertices[9]  = 0;
+        vertices[10] = 0;
+        vertices[11] = front_hill_lateral;
+
+        // top of back hill
+        vertices[12] = prop_width;
+        vertices[13] = 0;
+        vertices[14] = back_hill_top_lateral;
+
+        vertices[15] = 0;
+        vertices[16] = 0;
+        vertices[17] = back_hill_top_lateral;
+
+        // bottom of back hill
+        vertices[18] = prop_width;
+        vertices[19] = -20;
+        vertices[20] = back_lateral;
+
+        vertices[21] = 0;
+        vertices[22] = -20;
+        vertices[23] = back_lateral;
+
+        
 
         for ( var i = 0, j = 0, l = vertices.length; i < l; i ++, j += 3 ) {
 
-            vertices[ j + 1 ] = (data[ i ] * 10)-100;
             x = vertices[ j ];
             y = vertices[ j+1 ] - r;
             z = vertices[ j+2 ];
@@ -245,10 +295,52 @@
         g.computeFaceNormals();
         g.computeVertexNormals();
 
-        terrain = new THREE.Mesh(g, new THREE.MeshPhongMaterial ({color: 0x3D4143, shininess:60 }));
+        terrain = new THREE.Mesh(g, new THREE.MeshPhongMaterial ({color: 0x3D4143, shininess:60, side: THREE.DoubleSide }));
         terrain.castShadow = true;
         terrain.receiveShadow = true;
         content.add(terrain);
+    }
+
+    var start_tree;
+    var end_tree;
+    var start_tree_mesh;
+    var end_tree_mesh;
+
+    function make_trees()
+    {
+        start_tree = world.add({ type:'cylinder', size:[1, 20, 0.1], pos:[45, 40, 0], move:false });
+
+        buffgeotree = new THREE.BufferGeometry();
+        buffgeotree.fromGeometry( new THREE.SphereGeometry( 1 , 20, 10 ) );
+
+        var geometry = new THREE.ConeBufferGeometry( 0.5, 20, 32 );
+        var material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+        start_tree_mesh = new THREE.Mesh( geometry, material );
+        start_tree_mesh.scale.set(1,1,1);
+        start_tree_mesh.castShadow = true;
+        start_tree_mesh.receiveShadow = true;
+
+        start_tree_mesh.position.copy(start_tree.getPosition());
+
+        scene.add( start_tree_mesh );
+
+        // second tree
+        end_tree = world.add({ type:'cylinder', size:[1, 20, 0.1], pos:[20, 10, 85], move:false });
+
+        buffgeotree = new THREE.BufferGeometry();
+        buffgeotree.fromGeometry( new THREE.SphereGeometry( 1 , 20, 10 ) );
+
+        var geometry1 = new THREE.ConeBufferGeometry( 0.5, 20, 32 );
+        var material1 = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+        end_tree_mesh = new THREE.Mesh( geometry1, material1 );
+        end_tree_mesh.scale.set(1,1,1);
+        end_tree_mesh.castShadow = true;
+        end_tree_mesh.receiveShadow = true;
+
+        end_tree_mesh.position.copy(end_tree.getPosition());
+
+        scene.add( end_tree_mesh );
+
     }
 
     function populate(n) {
@@ -269,6 +361,8 @@
         world.clear();
         bodys = [];
 
+        make_trees();
+
 
         initTerrain();
 
@@ -282,11 +376,41 @@
         ];
 
         // now add object
-        var x, y, z, w, h, d;
-        var i = max;
+        var i, x, y, z, s, b;
+
+        var mx = 40;
+        var r = 150;
+        var a = (360/mx) * Math.torad;
+        var spring = [2, 0.3];// soften the joint ex: 100, 0.2
+        var size = 0.3
+
+        for( i = 0; i < mx; i++){
+
+            x = Math.sin(i*a) * r;
+            y = 60 + Math.sin(i*0.5) * 2;
+            z = Math.cos(i*a) * r;
+
+            bodys.push(world.add({ type:'sphere', density: 10, size:[size], pos:[x, y, z], move:1 }));
+            new_mesh = new THREE.Mesh( buffgeoSphere, matSphere)
+            new_mesh.scale.set(size,size,size);
+            new_mesh.castShadow = true;
+            new_mesh.receiveShadow = true;
+
+            scene.add( new_mesh );
+            meshs.push(new_mesh);
 
 
+            if( i === 0 )
+              world.add({ type:'jointHinge', body1:bodys[i].id, body2:start_tree.id, pos1:[0,-1,0], pos2:[0,1,0], collision:true, spring:spring });
+            if( i > 0 )
+              world.add({ type:'jointHinge', body1:bodys[i-1].id, body2:bodys[i].id, pos1:[0,-1,0], pos2:[0,1,0], collision:true, spring:spring });
+            if( i === mx-1 )
+              world.add({ type:'jointHinge', body1:bodys[mx-1].id, body2:end_tree.id, pos1:[0,-1,0], pos2:[0,1,0], collision:true, spring:spring });
 
+        }
+
+
+        /*
         while (i--){
             if(type===3) t = Math.floor(Math.random()*2)+1;
             else t = type;
@@ -315,14 +439,15 @@
             meshs[i].receiveShadow = true;
 
             scene.add( meshs[i] );
-        }
+        }*/
+        
 
         config[3] = 1;
         config[4] = all;
-        bodys[max] = world.add({size:[20, 40, 20], pos:[-150,20,0], rot:[0,0,0], move:true, noSleep:true, config:config, name:'paddle'});
-        meshs[max] = new THREE.Mesh( buffgeoBox, matBox );
-        meshs[max].scale.set( 20, 40, 20 );
-        scene.add( meshs[max] );
+        //bodys[max] = world.add({size:[20, 40, 20], pos:[-150,20,0], rot:[0,0,0], move:true, noSleep:true, config:config, name:'paddle'});
+        //meshs[max] = new THREE.Mesh( buffgeoBox, matBox );
+        //meshs[max].scale.set( 20, 40, 20 );
+        //scene.add( meshs[max] );
     }
 
     var f0, f1, f2 = 0;
@@ -332,7 +457,7 @@
         if(world == null) return;
 
         // apply new position on last rigidbody
-        bodys[bodys.length-1].setPosition(paddel.position);
+        //bodys[bodys.length-1].setPosition(paddel.position);
 
         
         world.step();
@@ -357,17 +482,20 @@
                 if(mesh.material.name === 'ssph') mesh.material = matSphere; 
 
                 // reset position
-                if(mesh.position.y<-300){
+                /*if(mesh.position.y<-300){
                     x = -100 + Math.random()*200;
                     z = -100 + Math.random()*200;
                     y = 100 + Math.random()*1000;
                     body.resetPosition(x,y,z);
-                }
+                }*/
             } else {
                 if(mesh.material.name === 'box') mesh.material = matBoxSleep;
                 if(mesh.material.name === 'sph') mesh.material = matSphereSleep;
             }
         }
+
+        start_tree_mesh.position.copy(start_tree.getPosition());
+        end_tree_mesh.position.copy(end_tree.getPosition());
 
         infos.innerHTML = world.performance.show();
     }
